@@ -73,27 +73,30 @@ class ProductoRetrieveView(generics.RetrieveAPIView):
             return Response(data={"titulo": f"Error al recuperar el producto: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ProductoUpdateView(generics.UpdateAPIView):
-    queryset = Producto.objects.all()
+    queryset = Producto.objects.filter(estado=1)
     serializer_class = ProductoSerializer
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request, pk, *args, **kwargs):
         try:
-            instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data)
+            producto = self.get_object()
+            serializer = ProductoSerializer(producto, data=request.data, partial=True)
+            """ instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data) """
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
+            return Response(data={"titulo":"actualizado","data":serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response(data={"titulo": f"Error al actualizar el producto: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(data={"titulo": f"Error al actualizar el producto no se encontro ese id: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ProductoDestroyView(generics.DestroyAPIView):
-    queryset = Producto.objects.all()
+class ProductoDestroyView(generics.UpdateAPIView):
+    queryset = Producto.objects.filter(estado=1)  # Filtrar solo productos activos
     serializer_class = ProductoSerializer
 
-    def destroy(self, request, *args, **kwargs):
+    def update(self, request, pk, *args, **kwargs):
         try:
-            instance = self.get_object()
-            self.perform_destroy(instance)
-            return Response(data={"message": "Producto eliminado correctamente."}, status=status.HTTP_204_NO_CONTENT)
+            producto = self.get_object()
+            producto.estado = 0
+            producto.save()
+            return Response(data={"titulo": "Producto eliminado con exito"}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response(data={"message": f"Error al eliminar el producto: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(data={"titulo": f"Error al eliminar el producto id no encontrado: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
